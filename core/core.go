@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"math/rand"
-	"time"
 )
 
 type WorkID string
@@ -129,88 +128,69 @@ func DeleteWork(tasks map[string]Task, targetTaskName string, targetWorkId WorkI
 	return nil
 }
 
-func needsRequired(finished map[WorkID]struct{}, work Work) bool {
-	for workName, _ := range work.WorksNeedToBeDone {
-		if _, ok := finished[workName]; !ok {
+func createSequence(works map[WorkID]Work) []WorkID {
+	sequence := make([]WorkID, 0, len(works))
+	available := make(map[int]WorkID)
+	for id, work := range works {
+		if len(work.WorksNeedToBeDone) == 0 {
+			available[len(available)] = id
+
+		}
+	}
+	i := 0
+	for len(available) > 0 {
+		randI := rand.Intn(len(available))
+		workID := available[randI]
+		delete(available, randI)
+
+		for id := range works[workID].WorksNeedToBeDone {
+			available[len(available)] = id
+
+		}
+
+		sequence[i] = workID
+		i += 1
+	}
+
+	return sequence
+}
+
+func canEmplaceWork(resources []uint32, work Work, index int) bool {
+	for i := index; i < len(resources) && i < index+work.Duration; i++ {
+		if resources[i] < work.ResourceNeeds && work.ResourceNeeds > 10 {
 			return false
 		}
 	}
 	return true
 
 }
-func getRandomWork(unFinished map[WorkID]struct{}) WorkID {
-	keys := make([]WorkID, len(unFinished), len(unFinished))
-	i := 0
-	for k := range unFinished {
-		keys[i] = k
-		i++
-	}
 
-	return keys[rand.Intn(len(keys)-1)]
+func caluculateMinimalTime(task Task) uint32 {
 
-}
-
-type step struct {
-	resource    uint32
-	finishesNow map[WorkID]struct{}
-}
-
-func emplaceWork(steps []step, work Work) []step {
-	for i := 0; work.Duration > 0; i++ {
-		if i >= len(steps) {
-			steps = append(steps, step{resource: 10, finishesNow: map[WorkID]struct{}{}})
-		}
-
-		if steps[i].resource-work.ResourceNeeds > 0 {
-			steps[i].resource -= work.ResourceNeeds
-			work.Duration -= 1
-		}
-		if work.Duration == 0 {
-			steps[i].finishesNow[work.Name] = struct{}{}
-		}
-	}
-	return steps
-}
-
-func makeStep(steps []step, finished map[WorkID]struct{}, unFinished map[WorkID]struct{}) []step {
-	for workID := range steps[0].finishesNow {
-		finished[workID] = struct{}{}
-		delete(unFinished, workID)
-
-	}
-	steps = steps[1:len(steps)]
-	return steps
-
-}
-
-func caluculateMinimalTime(task Task, ch chan<- uint32) {
-	rand.Seed(time.Now().UnixNano())
-
-	unFinished := map[WorkID]struct{}{}
-	for workId := range task.Works {
-		unFinished[workId] = struct{}{}
-	}
-
-	finished := map[WorkID]struct{}{}
-	steps := []step{}
 	curDuration := uint32(0)
-	for i := 0; i < 1000 && len(unFinished) > 0; i++ {
-		curWorkName := getRandomWork(unFinished)
-		steps = emplaceWork(steps, task.Works[curWorkName])
-		steps = makeStep(steps, finished, unFinished)
-		curDuration += 1
+	sequence := createSequence(task.Works)
+	resources := make([]uint32, 0, 0)
+	i := 0
+	for _, workID := range sequence {
+
+		for i = 0; i <= len(resources) {
+			if canEmplaceWork(resources, task.Works[workID], i) {
+				break
+			}
+		}
+		//emplaceWork()
 	}
-	ch <- curDuration
+
+	return curDuration
 
 }
 
 func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans uint32, err error) {
 	task, ok := tasks[targetTaskName]
 	if !ok {
-		return ans, fmt.Errorf("unknown task %v", targetTaskName)
+		err = fmt.Errorf("unknown task %v", targetTaskName)
 	}
-	ch := make(chan uint32)
-	caluculateMinimalTime(task, ch)
-	ans = <-ch
+
+	ans = caluculateMinimalTime(task)
 	return
 }
