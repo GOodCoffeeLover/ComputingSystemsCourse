@@ -197,8 +197,9 @@ func HandleCalculation(tasks map[string]core.Task, mutex sync.Mutex) func(c *gin
 
 	return func(context *gin.Context) {
 		taskName := context.Param("task_name")
-
+		mutex.Lock()
 		ans, err := core.StartCalculationForTask(tasks, taskName)
+		mutex.Unlock()
 		if err != nil {
 			context.Error(err)
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))

@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 )
 
@@ -150,7 +151,6 @@ func createSequence(works map[WorkID]Work) []WorkID {
 			notAvailable[id] = struct{}{}
 		}
 	}
-	fmt.Println(available)
 	i := 0
 	for len(available) > 0 {
 
@@ -168,11 +168,8 @@ func createSequence(works map[WorkID]Work) []WorkID {
 				delete(notAvailable, id)
 			}
 		}
-
-		fmt.Println(available)
 		sequence[i] = workID
 		i += 1
-		fmt.Println(sequence)
 	}
 
 	return sequence
@@ -202,7 +199,6 @@ func emplaceWork(resources []uint, work Work, start int) []uint {
 func caluculateMinimalTime(task Task) uint {
 
 	sequence := createSequence(task.Works)
-	fmt.Println(sequence)
 	resources := make([]uint, 0, 0)
 	i := 0
 	for _, workID := range sequence {
@@ -227,8 +223,33 @@ func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans 
 	if !ok {
 		err = fmt.Errorf("unknown task %v", targetTaskName)
 	}
-	//ch := make(chan uint, 10)
-	//for i := 0; i< 1000*1000
-	ans = caluculateMinimalTime(task)
-	return
+	maxGorutines := 10
+
+	gather := make(chan uint, maxGorutines)
+	//stopper := make(chan struct{}, maxGorutines)
+	res := make(chan float64)
+	numOfIterations := 1000 * 1000
+
+	go func() {
+		var min float64
+		for i := 0; i < numOfIterations; i++ {
+			res := float64(<-gather)
+			if i != 0 {
+				min = math.Min(min, res)
+			} else {
+				min = res
+			}
+		}
+		res <- min
+	}()
+
+	for i := 0; i < numOfIterations; i++ {
+		//stopper <- struct{}{}
+		go func() {
+			gather <- caluculateMinimalTime(task)
+			//<-stopper
+		}()
+	}
+
+	return uint(<-res), nil
 }
