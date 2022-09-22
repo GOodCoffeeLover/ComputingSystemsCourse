@@ -15,8 +15,8 @@ type Task struct {
 
 type Work struct {
 	Name              WorkID `json:"task"`
-	Duration          uint32 `json:"duration"`
-	ResourceNeeds     uint32 `json:"resources"`
+	Duration          uint   `json:"duration"`
+	ResourceNeeds     uint   `json:"resources"`
 	WorksNeedToBeDone map[WorkID]struct{}
 }
 
@@ -128,69 +128,107 @@ func DeleteWork(tasks map[string]Task, targetTaskName string, targetWorkId WorkI
 	return nil
 }
 
+func isAvailable(done map[WorkID]struct{}, work Work) bool {
+	for workID := range work.WorksNeedToBeDone {
+		if _, ok := done[workID]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func createSequence(works map[WorkID]Work) []WorkID {
-	sequence := make([]WorkID, 0, len(works))
+	sequence := make([]WorkID, len(works), len(works))
+	notAvailable := make(map[WorkID]struct{})
 	available := make(map[int]WorkID)
+	done := make(map[WorkID]struct{})
+
 	for id, work := range works {
 		if len(work.WorksNeedToBeDone) == 0 {
 			available[len(available)] = id
-
+		} else {
+			notAvailable[id] = struct{}{}
 		}
 	}
+	fmt.Println(available)
 	i := 0
 	for len(available) > 0 {
+
 		randI := rand.Intn(len(available))
-		workID := available[randI]
-		delete(available, randI)
+		available[randI], available[len(available)-1] = available[len(available)-1], available[randI]
+		workID := available[len(available)-1]
 
-		for id := range works[workID].WorksNeedToBeDone {
-			available[len(available)] = id
+		delete(available, len(available)-1)
 
+		done[workID] = struct{}{}
+
+		for id, _ := range notAvailable {
+			if isAvailable(done, works[id]) {
+				available[len(available)] = id
+				delete(notAvailable, id)
+			}
 		}
 
+		fmt.Println(available)
 		sequence[i] = workID
 		i += 1
+		fmt.Println(sequence)
 	}
 
 	return sequence
 }
 
-func canEmplaceWork(resources []uint32, work Work, index int) bool {
-	for i := index; i < len(resources) && i < index+work.Duration; i++ {
-		if resources[i] < work.ResourceNeeds && work.ResourceNeeds > 10 {
+func canEmplaceWork(resources []uint, work Work, index int) bool {
+	for i := index; i < len(resources) && i < index+int(work.Duration); i++ {
+		if resources[i]+work.ResourceNeeds > 10 {
 			return false
 		}
 	}
 	return true
 
 }
+func emplaceWork(resources []uint, work Work, start int) []uint {
+	if len(resources) < start+int(work.Duration) {
+		need := start + int(work.Duration) - len(resources)
+		buff := make([]uint, need, need)
+		resources = append(resources, buff...)
+	}
+	for i := start; i < start+int(work.Duration); i++ {
+		resources[i] += work.ResourceNeeds
+	}
+	return resources
+}
 
-func caluculateMinimalTime(task Task) uint32 {
+func caluculateMinimalTime(task Task) uint {
 
-	curDuration := uint32(0)
 	sequence := createSequence(task.Works)
-	resources := make([]uint32, 0, 0)
+	fmt.Println(sequence)
+	resources := make([]uint, 0, 0)
 	i := 0
 	for _, workID := range sequence {
-
-		for i = 0; i <= len(resources) {
+		//fmt.Println(workID)
+		//fmt.Println(resources)
+		for i = 0; i <= len(resources); i++ {
 			if canEmplaceWork(resources, task.Works[workID], i) {
 				break
 			}
 		}
-		//emplaceWork()
+		//fmt.Println(i)
+		resources = emplaceWork(resources, task.Works[workID], i)
 	}
+	//fmt.Println(resources)
 
-	return curDuration
+	return uint(len(resources))
 
 }
 
-func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans uint32, err error) {
+func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans uint, err error) {
 	task, ok := tasks[targetTaskName]
 	if !ok {
 		err = fmt.Errorf("unknown task %v", targetTaskName)
 	}
-
+	//ch := make(chan uint, 10)
+	//for i := 0; i< 1000*1000
 	ans = caluculateMinimalTime(task)
 	return
 }
