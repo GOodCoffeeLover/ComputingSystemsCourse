@@ -172,9 +172,11 @@ func emplaceWork(steps []step, work Work) []step {
 	return steps
 }
 
-func makeStep(steps []step, finished map[WorkID]struct{}) []step {
+func makeStep(steps []step, finished map[WorkID]struct{}, unFinished map[WorkID]struct{}) []step {
 	for workID := range steps[0].finishesNow {
 		finished[workID] = struct{}{}
+		delete(unFinished, workID)
+
 	}
 	steps = steps[1:len(steps)]
 	return steps
@@ -192,10 +194,10 @@ func caluculateMinimalTime(task Task, ch chan<- uint32) {
 	finished := map[WorkID]struct{}{}
 	steps := []step{}
 	curDuration := uint32(0)
-	for i := 0; i < 1000*1000 && len(unFinished) > 0; i++ {
+	for i := 0; i < 1000 && len(unFinished) > 0; i++ {
 		curWorkName := getRandomWork(unFinished)
 		steps = emplaceWork(steps, task.Works[curWorkName])
-		steps = makeStep(steps, finished)
+		steps = makeStep(steps, finished, unFinished)
 		curDuration += 1
 	}
 	ch <- curDuration
