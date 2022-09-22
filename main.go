@@ -206,7 +206,7 @@ func HandleCalculation(tasks map[string]core.Task, mutex sync.Mutex) func(c *gin
 		}
 
 		if len(context.Errors) == 0 {
-			context.JSON(http.StatusOK, fmt.Sprintf("minimal time for execution task %v  is %v", taskName, ans))
+			context.JSON(http.StatusOK, fmt.Sprintf("minimal duration for execution task %v  is %v", taskName, ans))
 		}
 
 	}
