@@ -16,7 +16,6 @@ func NewTaskMapStorage() *TasksMapStorage {
 
 func (tms *TasksMapStorage) Get(taskName string) (core.Task, error) {
 	task, ok := tms.tasks[taskName]
-	fmt.Println(">>>", task, ok)
 	if ok {
 		return task, nil
 	} else {
