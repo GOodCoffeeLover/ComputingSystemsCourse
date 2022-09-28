@@ -223,7 +223,7 @@ func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans 
 	if !ok {
 		err = fmt.Errorf("unknown task %v", targetTaskName)
 	}
-	maxGorutines := 10
+	maxGorutines := 100
 
 	gather := make(chan uint, maxGorutines)
 	//stopper := make(chan struct{}, maxGorutines)
