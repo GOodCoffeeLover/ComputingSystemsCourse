@@ -21,112 +21,121 @@ type Work struct {
 	WorksNeedToBeDone map[WorkID]struct{}
 }
 
-func CreateTask(tasks map[string]Task, task Task) error {
+type tasksStorage interface {
+	Get(string) (Task, error)
+	Set(string, Task) error
+	Delete(string) error
+}
+
+func CreateTask(tasks tasksStorage, task Task) error {
 	if task.Name == "" {
 		return fmt.Errorf("empty task name")
 	}
-	if _, ok := tasks[task.Name]; ok {
+	if _, err := tasks.Get(task.Name); err == nil {
 		return fmt.Errorf("task: %v already exists", task.Name)
 	}
-	tasks[task.Name] = task
+	tasks.Set(task.Name, task)
 	return nil
 }
 
-func RenameTask(tasks map[string]Task, targetTaskName string, newName string) error {
-	task, ok := tasks[targetTaskName]
-	if !ok {
+func RenameTask(tasks tasksStorage, targetTaskName string, newName string) error {
+	task, err := tasks.Get(targetTaskName)
+	if err != nil {
 		return fmt.Errorf("unknown task name : %v ", targetTaskName)
 	}
 
-	_, ok = tasks[newName]
-	if ok {
+	_, err = tasks.Get(newName)
+	if err == nil {
 		return fmt.Errorf("task with name %v already exists", newName)
 	}
 
 	task.Name = newName
-	delete(tasks, targetTaskName)
-	tasks[newName] = task
+	if err = tasks.Delete(targetTaskName); err != nil {
+		return err
+	}
+	tasks.Set(newName, task)
 
 	return nil
 }
 
-func ChangeStartDate(tasks map[string]Task, targetTaskName string, newDate string) error {
-	task, ok := tasks[targetTaskName]
-	if !ok {
+func ChangeStartDate(tasks tasksStorage, targetTaskName string, newDate string) error {
+	task, err := tasks.Get(targetTaskName)
+	if err != nil {
 		return fmt.Errorf("unknown task name : %v ", targetTaskName)
 	}
 
 	task.StartDate = newDate
-	tasks[targetTaskName] = task
+	tasks.Set(targetTaskName, task)
 
 	return nil
 }
 
-func DeleteTask(tasks map[string]Task, targetTaskName string) error {
-	_, ok := tasks[targetTaskName]
-	if !ok {
+func DeleteTask(tasks tasksStorage, targetTaskName string) error {
+	_, err := tasks.Get(targetTaskName)
+	if err != nil {
 		return fmt.Errorf("unknown task name : %v ", targetTaskName)
 	}
-	delete(tasks, targetTaskName)
 
-	return nil
+	return tasks.Delete(targetTaskName)
 }
 
-func AddWorkToTask(tasks map[string]Task, targetTaskName string, work Work) error {
-
-	if _, ok := tasks[targetTaskName]; !ok {
-		return fmt.Errorf("unknown task name")
+func AddWorkToTask(tasks tasksStorage, targetTaskName string, work Work) error {
+	task, err := tasks.Get(targetTaskName)
+	if err != nil {
+		return err
 	}
-	if _, ok := tasks[targetTaskName].Works[work.Name]; ok {
+	if _, ok := task.Works[work.Name]; ok {
 		return fmt.Errorf("work ulready exists")
 	}
 	work.WorksNeedToBeDone = make(map[WorkID]struct{})
-	tasks[targetTaskName].Works[work.Name] = work
+	task.Works[work.Name] = work
 
-	return nil
+	return tasks.Set(targetTaskName, task)
 }
 
-func AddNeedsForWork(tasks map[string]Task, targetTaskName string, targetWorkId WorkID, neededWorkId WorkID) error {
+func AddNeedsForWork(tasks tasksStorage, targetTaskName string, targetWorkId WorkID, neededWorkId WorkID) error {
 	if targetWorkId == neededWorkId {
 		return fmt.Errorf("target work and needed work is the same: %v", targetWorkId)
 	}
-	if _, ok := tasks[targetTaskName]; !ok {
+	task, err := tasks.Get(targetTaskName)
+	if err != nil {
 		return fmt.Errorf("unknown task name : %v ", targetTaskName)
 	}
 
-	if _, ok := tasks[targetTaskName].Works[targetWorkId]; !ok {
+	if _, ok := task.Works[targetWorkId]; !ok {
 		return fmt.Errorf("unknow work name : %v", targetWorkId)
 	}
 
-	targetWork := tasks[targetTaskName].Works[targetWorkId]
+	targetWork := task.Works[targetWorkId]
 
-	if _, ok := tasks[targetTaskName].Works[neededWorkId]; !ok {
+	if _, ok := task.Works[neededWorkId]; !ok {
 		return fmt.Errorf("unknow work name : %v", neededWorkId)
 	}
 
 	targetWork.WorksNeedToBeDone[neededWorkId] = struct{}{}
 
-	tasks[targetTaskName].Works[targetWorkId] = targetWork
-	return nil
+	task.Works[targetWorkId] = targetWork
+
+	return tasks.Set(targetTaskName, task)
 }
 
-func DeleteWork(tasks map[string]Task, targetTaskName string, targetWorkId WorkID) error {
-	_, ok := tasks[targetTaskName]
-	if !ok {
+func DeleteWork(tasks tasksStorage, targetTaskName string, targetWorkId WorkID) error {
+	task, err := tasks.Get(targetTaskName)
+	if err != nil {
 		return fmt.Errorf("unknown task name : %v ", targetTaskName)
 	}
-	if _, ok = tasks[targetTaskName].Works[targetWorkId]; !ok {
+	if _, ok := task.Works[targetWorkId]; !ok {
 		return fmt.Errorf("unknown target work : %v", targetWorkId)
 	}
-	delete(tasks[targetTaskName].Works, targetWorkId)
-	for workId, work := range tasks[targetTaskName].Works {
-		if _, ok = work.WorksNeedToBeDone[targetWorkId]; ok {
+	delete(task.Works, targetWorkId)
+	for workId, work := range task.Works {
+		if _, ok := work.WorksNeedToBeDone[targetWorkId]; ok {
 			delete(work.WorksNeedToBeDone, targetWorkId)
-			tasks[targetTaskName].Works[workId] = work
+			task.Works[workId] = work
 		}
 	}
 
-	return nil
+	return tasks.Set(targetTaskName, task)
 }
 
 func isAvailable(done map[WorkID]struct{}, work Work) bool {
@@ -196,7 +205,7 @@ func emplaceWork(resources []uint, work Work, start int) []uint {
 	return resources
 }
 
-func caluculateMinimalTime(task Task) uint {
+func (task *Task) caluculateMinimalTime() uint {
 
 	sequence := createSequence(task.Works)
 	resources := make([]uint, 0, 0)
@@ -218,12 +227,12 @@ func caluculateMinimalTime(task Task) uint {
 
 }
 
-func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans uint, err error) {
-	task, ok := tasks[targetTaskName]
-	if !ok {
+func StartCalculationForTask(tasks tasksStorage, targetTaskName string) (ans uint, err error) {
+	task, err := tasks.Get(targetTaskName)
+	if err != nil {
 		err = fmt.Errorf("unknown task %v", targetTaskName)
 	}
-	maxGorutines := 100
+	maxGorutines := 10
 
 	gather := make(chan uint, maxGorutines)
 	//stopper := make(chan struct{}, maxGorutines)
@@ -246,7 +255,7 @@ func StartCalculationForTask(tasks map[string]Task, targetTaskName string) (ans 
 	for i := 0; i < numOfIterations; i++ {
 		//stopper <- struct{}{}
 		go func() {
-			gather <- caluculateMinimalTime(task)
+			gather <- task.caluculateMinimalTime()
 			//<-stopper
 		}()
 	}
