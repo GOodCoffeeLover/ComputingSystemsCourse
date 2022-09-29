@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
-	"sync"
 )
 
 type tasksStorage interface {
@@ -16,10 +15,8 @@ type tasksStorage interface {
 }
 
 // get /task/:task_name
-func HandleTaskAccess(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleTaskAccess(tasks tasksStorage) func(c *gin.Context) {
 	return func(context *gin.Context) {
-		mutex.Lock()
-		defer mutex.Unlock()
 		taskName := context.Param("task_name")
 		task, err := tasks.Get(taskName)
 		if err != nil {
@@ -31,16 +28,14 @@ func HandleTaskAccess(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 }
 
 // post /task  json:{"order_name":"", "start_date":""}
-func HandleTaskCreation(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleTaskCreation(tasks tasksStorage) func(c *gin.Context) {
 
 	return func(c *gin.Context) {
 		task := core.Task{Works: make(map[core.WorkID]core.Work)}
 		c.BindJSON(&task)
 		task.Name = strings.ReplaceAll(task.Name, " ", "")
 
-		mutex.Lock()
 		err := core.CreateTask(tasks, task)
-		mutex.Unlock()
 		if err != nil {
 			c.Error(err)
 			c.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v\n", err)))
@@ -51,7 +46,7 @@ func HandleTaskCreation(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Contex
 }
 
 // post /task/:task_name
-func HandleTaskUpdate(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleTaskUpdate(tasks tasksStorage) func(c *gin.Context) {
 
 	return func(c *gin.Context) {
 		targetTaskName := c.Param("task_name")
@@ -61,9 +56,7 @@ func HandleTaskUpdate(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 		task.Name = strings.ReplaceAll(task.Name, " ", "")
 
 		if task.StartDate != "" {
-			mutex.Lock()
 			err = core.ChangeStartDate(tasks, targetTaskName, task.StartDate)
-			mutex.Unlock()
 			if err != nil {
 				c.Error(err)
 				c.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v\n", err)))
@@ -71,9 +64,7 @@ func HandleTaskUpdate(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 		}
 
 		if task.Name != "" {
-			mutex.Lock()
 			err = core.RenameTask(tasks, targetTaskName, task.Name)
-			mutex.Unlock()
 			if err != nil {
 				c.Error(err)
 				c.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v\n", err)))
@@ -87,14 +78,12 @@ func HandleTaskUpdate(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 }
 
 // delete /task/:task_name
-func HandleTaskDelete(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleTaskDelete(tasks tasksStorage) func(c *gin.Context) {
 
 	return func(c *gin.Context) {
 		targetTaskName := c.Param("task_name")
 
-		mutex.Lock()
 		err := core.DeleteTask(tasks, targetTaskName)
-		mutex.Unlock()
 		if err != nil {
 			c.Error(err)
 			c.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v\n", err)))
@@ -106,10 +95,8 @@ func HandleTaskDelete(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 }
 
 // get /work/:task_name/:work_name
-func HandleWorkAccess(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleWorkAccess(tasks tasksStorage) func(c *gin.Context) {
 	return func(context *gin.Context) {
-		mutex.Lock()
-		defer mutex.Unlock()
 		taskName := context.Param("task_name")
 		task, err := tasks.Get(taskName)
 		if err != nil {
@@ -127,14 +114,12 @@ func HandleWorkAccess(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 }
 
 //post /work/:task_name json:{"task":"", "duration":0, "resources":0}
-func HandleWorkCreation(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleWorkCreation(tasks tasksStorage) func(c *gin.Context) {
 	return func(context *gin.Context) {
 		taskName := context.Param("task_name")
 		work := core.Work{}
 		context.BindJSON(&work)
 
-		mutex.Lock()
-		defer mutex.Unlock()
 		err := core.AddWorkToTask(tasks, taskName, work)
 
 		if err != nil {
@@ -148,7 +133,7 @@ func HandleWorkCreation(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Contex
 
 // post /work/:task_name/:work_name
 
-func HandleWorkNeedsSetup(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleWorkNeedsSetup(tasks tasksStorage) func(c *gin.Context) {
 	type Needs struct {
 		Work []string `json:"pred"`
 	}
@@ -160,9 +145,7 @@ func HandleWorkNeedsSetup(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Cont
 		context.Bind(&needs)
 
 		for _, work := range needs.Work {
-			mutex.Lock()
 			err := core.AddNeedsForWork(tasks, taskName, workName, core.WorkID(work))
-			mutex.Unlock()
 
 			if err != nil {
 				context.Error(err)
@@ -178,7 +161,7 @@ func HandleWorkNeedsSetup(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Cont
 }
 
 // delte /work/:task_name/:work_name
-func HandleWorkDelete(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleWorkDelete(tasks tasksStorage) func(c *gin.Context) {
 
 	return func(context *gin.Context) {
 		taskName := context.Param("task_name")
@@ -198,13 +181,11 @@ func HandleWorkDelete(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context)
 }
 
 //get  /task/calculate/:task_name
-func HandleCalculation(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Context) {
+func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
 
 	return func(context *gin.Context) {
 		taskName := context.Param("task_name")
-		mutex.Lock()
 		ans, err := core.StartCalculationForTask(tasks, taskName)
-		mutex.Unlock()
 		if err != nil {
 			context.Error(err)
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
