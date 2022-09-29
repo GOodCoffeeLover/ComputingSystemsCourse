@@ -171,7 +171,7 @@ func HandleWorkNeedsSetup(tasks tasksStorage, mutex sync.Mutex) func(c *gin.Cont
 
 		}
 		if len(context.Errors) == 0 {
-			context.JSON(http.StatusOK, fmt.Sprintf("needs %v for work succesfuly added", needs.Work))
+			context.JSON(http.StatusOK, fmt.Sprintf("needs %v for work %v  succesfuly added", needs.Work, workName))
 		}
 
 	}

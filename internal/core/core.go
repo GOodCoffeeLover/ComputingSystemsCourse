@@ -161,7 +161,8 @@ func createSequence(works map[WorkID]Work) []WorkID {
 		}
 	}
 	i := 0
-	for len(available) > 0 {
+	counter := len(works)
+	for len(available) > 0 && counter > 0 {
 
 		randI := rand.Intn(len(available))
 		available[randI], available[len(available)-1] = available[len(available)-1], available[randI]
@@ -205,24 +206,28 @@ func emplaceWork(resources []uint, work Work, start int) []uint {
 	return resources
 }
 
-func (task *Task) caluculateMinimalTime() uint {
+func (task *Task) calculateMinimalTime() uint {
 
 	sequence := createSequence(task.Works)
 	resources := make([]uint, 0, 0)
-	i := 0
+	finishedData := make(map[WorkID]int)
 	for _, workID := range sequence {
-		//fmt.Println(workID)
-		//fmt.Println(resources)
-		for i = 0; i <= len(resources); i++ {
-			if canEmplaceWork(resources, task.Works[workID], i) {
+		i := 0
+		work := task.Works[workID]
+		for workId, _ := range work.WorksNeedToBeDone {
+			if i < finishedData[workId] {
+				i = finishedData[workId]
+			}
+		}
+		for ; i <= len(resources); i++ {
+			if canEmplaceWork(resources, work, i) {
 				break
 			}
 		}
-		//fmt.Println(i)
-		resources = emplaceWork(resources, task.Works[workID], i)
+		resources = emplaceWork(resources, work, i)
+		finishedData[workID] = i + int(work.Duration)
 	}
 	//fmt.Println(resources)
-
 	return uint(len(resources))
 
 }
@@ -235,7 +240,7 @@ func StartCalculationForTask(tasks tasksStorage, targetTaskName string) (ans uin
 	maxGorutines := 10
 
 	gather := make(chan uint, maxGorutines)
-	//stopper := make(chan struct{}, maxGorutines)
+	stopper := make(chan struct{}, maxGorutines)
 	res := make(chan float64)
 	numOfIterations := 1000 * 1000
 
@@ -253,10 +258,10 @@ func StartCalculationForTask(tasks tasksStorage, targetTaskName string) (ans uin
 	}()
 
 	for i := 0; i < numOfIterations; i++ {
-		//stopper <- struct{}{}
+		stopper <- struct{}{}
 		go func() {
-			gather <- task.caluculateMinimalTime()
-			//<-stopper
+			gather <- task.calculateMinimalTime()
+			<-stopper
 		}()
 	}
 
