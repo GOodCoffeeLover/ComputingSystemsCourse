@@ -12,8 +12,10 @@ type TasksMapStorage struct {
 }
 
 func NewTaskMapStorage() *TasksMapStorage {
-	tms := TasksMapStorage{tasks: make(map[string]core.Task), mutex: sync.RWMutex{}}
-	return &tms
+	return &TasksMapStorage{
+		tasks: make(map[string]core.Task),
+		mutex: sync.RWMutex{},
+	}
 }
 
 func (tms *TasksMapStorage) Get(taskName string) (core.Task, error) {

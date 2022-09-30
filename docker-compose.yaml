@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+  mongoDB:
+    image: mongo:latest
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}"
+
+#  crud_service:
+#  environment:
+#    MONGODB_URI : "mongodb://${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}:${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}@mongoDB:27017/"
