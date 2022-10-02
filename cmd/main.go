@@ -9,7 +9,12 @@ import (
 )
 
 func main() {
-	tasks := storage.NewTaskMapStorage()
+	//tasks := storage.NewTaskMapStorage()
+	tasks, err := storage.NewTasksMongoStorage()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer tasks.Disconnect()
 	router := gin.Default()
 
 	router.GET("/check", func(context *gin.Context) {
@@ -27,7 +32,7 @@ func main() {
 	router.POST("/work/:task_name", handlers.HandleWorkCreation(tasks))
 	router.DELETE("/work/:task_name/:work_name", handlers.HandleWorkDelete(tasks))
 
-	err := router.Run(":8080")
+	err = router.Run(":8080")
 	if err != nil {
 		log.Fatalln(err)
 	}

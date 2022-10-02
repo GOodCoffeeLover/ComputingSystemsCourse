@@ -11,11 +11,11 @@ type TasksMapStorage struct {
 	tasks map[string]core.Task
 }
 
-func NewTaskMapStorage() *TasksMapStorage {
+func NewTaskMapStorage() (*TasksMapStorage, error) {
 	return &TasksMapStorage{
 		tasks: make(map[string]core.Task),
 		mutex: sync.RWMutex{},
-	}
+	}, nil
 }
 
 func (tms *TasksMapStorage) Get(taskName string) (core.Task, error) {
