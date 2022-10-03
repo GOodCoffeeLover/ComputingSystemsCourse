@@ -3,7 +3,7 @@ curl http://localhost:8080/task \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"order_name":"task0", "start_date":"1-1-2022"}'
+    --data '{"task_name":"task0", "start_date":"1-1-2022"}'
 # sleep 1
 
 curl http://localhost:8080/work/task0 \
@@ -11,7 +11,7 @@ curl http://localhost:8080/work/task0 \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work1", "duration":2, "resources":10}'
+    --data '{"work_name":"work1", "duration":2, "resources":10}'
 
 # sleep 1
 
@@ -20,7 +20,7 @@ curl http://localhost:8080/work/task0 \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work2", "duration":2, "resources":10}'
+    --data '{"work_name":"work2", "duration":2, "resources":10}'
 
 
 curl http://localhost:8080/work/task0 \
@@ -28,7 +28,7 @@ curl http://localhost:8080/work/task0 \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work3", "duration":2, "resources":10}'
+    --data '{"work_name":"work3", "duration":2, "resources":10}'
 # sleep 1
 
 
@@ -37,35 +37,35 @@ curl http://localhost:8080/work/task0 \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work4", "duration":3, "resources":2}'
+    --data '{"work_name":"work4", "duration":3, "resources":2}'
 
 curl http://localhost:8080/work/task0 \
     -w '\n' \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work5", "duration":4, "resources":1}'
+    --data '{"work_name":"work5", "duration":4, "resources":1}'
 
 curl http://localhost:8080/work/task0 \
     -w '\n' \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work6", "duration":2, "resources":5}'
+    --data '{"work_name":"work6", "duration":2, "resources":5}'
 
 curl http://localhost:8080/work/task0 \
     -w '\n' \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"task":"work7", "duration":3, "resources":7}'
+    --data '{"work_name":"work7", "duration":3, "resources":7}'
 
 curl http://localhost:8080/work/task0 \
     -w '\n' \
     --include \
-    --header "Content-Type: application/json" \
+    --header "Content-Type: appliworkcation/json" \
     --request "POST" \
-    --data '{"task":"work8", "duration":5, "resources":9}'
+    --data '{"work_name":"work8", "duration":5, "resources":9}'
 
 
 curl http://localhost:8080/work/task0/work1 \

@@ -13,7 +13,8 @@ import (
 const mongo_url = "mongodb://root:password@localhost:27017/"
 
 type TasksMongoStorage struct {
-	client *mongo.Client
+	client     *mongo.Client
+	collection *mongo.Collection
 }
 
 func NewTasksMongoStorage() (*TasksMongoStorage, error) {
@@ -27,33 +28,37 @@ func NewTasksMongoStorage() (*TasksMongoStorage, error) {
 		return nil, err
 
 	}
-	return &TasksMongoStorage{client: client}, nil
+
+	return &TasksMongoStorage{
+		client:     client,
+		collection: client.Database("TasksManager").Collection("Tasks"),
+	}, nil
 }
 
 func (tms *TasksMongoStorage) Get(taskName string) (task core.Task, err error) {
-	coll := tms.client.Database("Time_Manager").Collection("Tasks")
-	filter := bson.D{{"_id", taskName}}
-	res := coll.FindOne(context.TODO(), filter, nil)
-	err = res.Decode(&task)
-	fmt.Printf("task: %v, err: %v\n", res, err)
 
-	if err != nil {
+	filter := bson.D{{"_id", taskName}}
+	res := tms.collection.FindOne(context.TODO(), filter)
+
+	if res.Err() != nil {
+		err = fmt.Errorf("can't find taks(id:%v) due to %v", taskName, res.Err())
 		return
 	}
-	//fmt.Printf("task: %v", task)
+
+	if err = res.Decode(&task); err != nil {
+		err = fmt.Errorf("can't decode res due to %v", err)
+		return
+	}
+	fmt.Printf("task: %v", task)
 	return
 }
 func (tms *TasksMongoStorage) Set(taskName string, task core.Task) error {
-	coll := tms.client.Database("Time_Manager").Collection("Tasks")
-	doc, err := bson.Marshal(task)
-	doc, err = bson.MarshalAppend(doc, map[string]string{"_id": taskName})
+	filter := bson.D{{"_id", taskName}}
+	update := bson.D{{"$set", task}}
+	opts := options.Update().SetUpsert(true)
+
+	res, err := tms.collection.UpdateOne(context.TODO(), filter, update, opts)
 	if err != nil {
-		//fmt.Println(err)
-		return err
-	}
-	res, err := coll.InsertOne(context.TODO(), doc)
-	if err != nil {
-		//fmt.Println(err)
 		return err
 	} else {
 		fmt.Println(res)
@@ -62,6 +67,11 @@ func (tms *TasksMongoStorage) Set(taskName string, task core.Task) error {
 }
 
 func (tms *TasksMongoStorage) Delete(taskName string) error {
+	filter := bson.D{{"_id", taskName}}
+	res := tms.collection.FindOneAndDelete(context.TODO(), filter)
+	if res.Err() != nil {
+		return fmt.Errorf("can't delete task(id:%v) due to %v", taskName, res.Err())
+	}
 	return nil
 }
 func (tms *TasksMongoStorage) Disconnect() error {

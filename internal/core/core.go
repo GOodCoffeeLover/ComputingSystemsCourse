@@ -9,16 +9,16 @@ import (
 type WorkID string
 
 type Task struct {
-	Name      string `json:"order_name"`
-	StartDate string `json:"start_date"`
-	Works     map[WorkID]Work
+	Name      string          `json:"task_name" bson:"_id"`
+	StartDate string          `json:"start_date" bson:"start_date"`
+	Works     map[WorkID]Work `json:"-" bson:"works"`
 }
 
 type Work struct {
-	Name              WorkID `json:"task"`
-	Duration          uint   `json:"duration"`
-	ResourceNeeds     uint   `json:"resources"`
-	WorksNeedToBeDone map[WorkID]struct{}
+	Name              WorkID              `json:"work_name" bson:"work_name"`
+	Duration          uint                `json:"duration" bson:"duration"`
+	ResourceNeeds     uint                `json:"resources" bson:"resource_needs"`
+	WorksNeedToBeDone map[WorkID]struct{} `json:"-" bson:"works_need_to_be_done"`
 }
 
 type tasksStorage interface {
