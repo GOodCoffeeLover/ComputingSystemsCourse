@@ -9,6 +9,10 @@ import (
 )
 
 func main() {
+	//if err := godotenv.Load(); err != nil {
+	//	log.Printf("can't load .env due to %v", err)
+	//}
+
 	//tasks := storage.NewTaskMapStorage()
 	tasks, err := storage.NewTasksMongoStorage()
 	if err != nil {

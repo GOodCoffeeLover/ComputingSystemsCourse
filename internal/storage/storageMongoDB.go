@@ -8,9 +8,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"os"
 )
 
-const mongo_url = "mongodb://root:password@localhost:27017/"
+//const mongo_url = "mongodb://root:password@localhost:27017/"
 
 type TasksMongoStorage struct {
 	client     *mongo.Client
@@ -18,8 +19,12 @@ type TasksMongoStorage struct {
 }
 
 func NewTasksMongoStorage() (*TasksMongoStorage, error) {
-	uri := mongo_url
-	//uri := os.Getenv("MONGODB_URI")
+	//uri := mongo_url
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		return nil, fmt.Errorf("can't connect to mongoDB due to $MONGODB_URI = \"\"")
+	}
+	fmt.Println(uri)
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err

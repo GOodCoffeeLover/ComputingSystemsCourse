@@ -10,6 +10,14 @@ services:
       MONGO_INITDB_ROOT_USERNAME: "${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}"
       MONGO_INITDB_ROOT_PASSWORD: "${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}"
 
-#  crud_service:
-#  environment:
-#    MONGODB_URI : "mongodb://${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}:${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}@mongoDB:27017/"
+  main:
+    image: task-manager
+    build: .
+    depends_on:
+      - mongoDB
+#    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URI : "mongodb://${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}@mongoDB:27017/"
+
