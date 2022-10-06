@@ -241,7 +241,7 @@ func StartCalculationForTask(tasks tasksStorage, targetTaskName string) (ans uin
 
 	gather := make(chan uint, maxGorutines)
 	stopper := make(chan struct{}, maxGorutines)
-	res := make(chan float64)
+	result := make(chan float64)
 	numOfIterations := 1000 * 1000
 
 	go func() {
@@ -254,7 +254,7 @@ func StartCalculationForTask(tasks tasksStorage, targetTaskName string) (ans uin
 				min = res
 			}
 		}
-		res <- min
+		result <- min
 	}()
 
 	for i := 0; i < numOfIterations; i++ {
@@ -265,5 +265,5 @@ func StartCalculationForTask(tasks tasksStorage, targetTaskName string) (ans uin
 		}()
 	}
 
-	return uint(<-res), nil
+	return uint(<-result), nil
 }
