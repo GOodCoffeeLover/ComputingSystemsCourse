@@ -5,15 +5,15 @@ WORKDIR ComputingSystemsCourse
 #ENV GOROOT=/ComputingSystemsCourse
 EXPOSE 8080:8080
 
-COPY go.mod .
-COPY go.sum .
+COPY ./wait-for-it.sh .
+RUN ["chmod", "+x", "./wait-for-it.sh"]
+
+COPY go.mod go.sum ./
 
 RUN ["go", "mod", "download"]
 
-COPY ./wait-for-it.sh .
-RUN ["chmod", "+x", "./wait-for-it.sh"]
-COPY cmd ./cmd
-COPY internal ./internal
+COPY ./cmd ./cmd
+COPY ./internal ./internal
 
 RUN ["go", "build", "-o", "/task-manager", "cmd/main.go"]
 

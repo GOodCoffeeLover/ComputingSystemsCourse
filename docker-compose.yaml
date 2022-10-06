@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   mongoDB:
-    image: mongo:latest
+    image: mongo:6.0.2
     restart: always
     ports:
       - "27017:27017"
@@ -12,7 +12,7 @@ services:
 
   main:
     image: task-manager
-    build: .
+    build: ./main
     depends_on:
       - mongoDB
 #    restart: always
