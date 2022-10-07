@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"main/internal/core"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -182,17 +185,43 @@ func HandleWorkDelete(tasks tasksStorage) func(c *gin.Context) {
 
 //get  /task/calculate/:task_name
 func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
-
+	calcServiceURL := "http://" + os.Getenv("CALCULATION_SERVICE_ADDRESS") + "/calculate"
 	return func(context *gin.Context) {
-		taskName := context.Param("task_name")
-		ans, err := core.StartCalculationForTask(tasks, taskName)
+		targetTaskName := context.Param("task_name")
+
+		task, err := tasks.Get(targetTaskName)
+		if err != nil {
+			err = fmt.Errorf("unknown task %v", targetTaskName)
+			context.Error(err)
+			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
+			return
+		}
+
+		fmt.Printf("Sending task %v\n", task)
+		jsonDoc, err := json.Marshal(task)
+		if err != nil {
+			err = fmt.Errorf("cant marshal task due to %v", err)
+			context.Error(err)
+			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
+			return
+		}
+
+		res, err := http.NewRequest(http.MethodGet, calcServiceURL, bytes.NewReader(jsonDoc))
+		if err != nil {
+			context.Error(err)
+			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
+			return
+		}
+		//res.Body
+		res = res
+		ans, err := 0, nil // core.StartCalculationForTask(task, taskName)
 		if err != nil {
 			context.Error(err)
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
 		}
 
 		if len(context.Errors) == 0 {
-			context.JSON(http.StatusOK, fmt.Sprintf("minimal duration for execution task %v  is %v", taskName, ans))
+			context.JSON(http.StatusOK, fmt.Sprintf("minimal duration for execution task %v  is %v", targetTaskName, ans))
 		}
 
 	}
