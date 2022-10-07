@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"ComputingSystemsCourse/internal/core"
 	"fmt"
+	"main/internal/core"
 	"sync"
 )
 

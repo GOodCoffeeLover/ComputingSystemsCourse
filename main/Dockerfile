@@ -1,8 +1,7 @@
 FROM golang:1.18
 
+WORKDIR main
 
-WORKDIR ComputingSystemsCourse
-#ENV GOROOT=/ComputingSystemsCourse
 EXPOSE 8080:8080
 
 COPY ./wait-for-it.sh .

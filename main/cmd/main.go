@@ -1,10 +1,10 @@
 package main
 
 import (
-	"ComputingSystemsCourse/internal/handlers"
-	"ComputingSystemsCourse/internal/storage"
 	"github.com/gin-gonic/gin"
 	"log"
+	"main/internal/handlers"
+	"main/internal/storage"
 	"net/http"
 )
 

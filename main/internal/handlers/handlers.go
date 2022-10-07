@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"ComputingSystemsCourse/internal/core"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"main/internal/core"
 	"net/http"
 	"strings"
 )

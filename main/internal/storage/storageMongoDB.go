@@ -1,13 +1,13 @@
 package storage
 
 import (
-	"ComputingSystemsCourse/internal/core"
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"main/internal/core"
 	"os"
 )
 
