@@ -13,7 +13,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "it's okay"})
 	})
 	router.GET("/calculate", handlers.HandleTaskCalculations())
-	err := router.Run("localhost:8090")
+	err := router.Run("0.0.0.0:8090")
 	if err != nil {
 		log.Fatalln(err)
 	}

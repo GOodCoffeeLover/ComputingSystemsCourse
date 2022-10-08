@@ -190,6 +190,8 @@ func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
 	calcServiceAddr := os.Getenv("CALCULATION_SERVICE_ADDRESS")
 	if calcServiceAddr == "" {
 		log.Fatal("don't have calculation service address")
+	} else {
+		log.Printf("Calculation Address: %v", calcServiceAddr)
 	}
 	return func(context *gin.Context) {
 		targetTaskName := context.Param("task_name")
@@ -225,9 +227,13 @@ func getCalculation(calculationServerAddress string, task core.Task) (uint32, er
 		return 0, err
 	}
 
-	rep, err := http.NewRequest(http.MethodGet, calculationServerAddress, bytes.NewReader(jsonDoc))
+	req, err := http.NewRequest(http.MethodGet, calculationServerAddress, bytes.NewReader(jsonDoc))
 	if err != nil {
 		return 0, err
+	}
+	rep, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, nil
 	}
 	repBody, err := ioutil.ReadAll(rep.Body)
 	if err != nil {
