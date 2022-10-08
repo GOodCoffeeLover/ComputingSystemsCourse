@@ -114,7 +114,7 @@ func (task *Task) calculateMinimalTime() uint {
 
 }
 
-func StartCalculationForTask(task Task, targetTaskName string) (ans uint, err error) {
+func (task *Task) StartCalculation() (ans uint, err error) {
 	maxGorutines := 10
 
 	gather := make(chan uint, maxGorutines)

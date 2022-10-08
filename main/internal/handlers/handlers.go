@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
+	"log"
 	"main/internal/core"
 	"net/http"
 	"os"
@@ -185,11 +187,15 @@ func HandleWorkDelete(tasks tasksStorage) func(c *gin.Context) {
 
 //get  /task/calculate/:task_name
 func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
-	calcServiceURL := "http://" + os.Getenv("CALCULATION_SERVICE_ADDRESS") + "/calculate"
+	calcServiceAddr := os.Getenv("CALCULATION_SERVICE_ADDRESS")
+	if calcServiceAddr == "" {
+		log.Fatal("don't have calculation service address")
+	}
 	return func(context *gin.Context) {
 		targetTaskName := context.Param("task_name")
 
 		task, err := tasks.Get(targetTaskName)
+		fmt.Println(task)
 		if err != nil {
 			err = fmt.Errorf("unknown task %v", targetTaskName)
 			context.Error(err)
@@ -197,32 +203,41 @@ func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
 			return
 		}
 
-		fmt.Printf("Sending task %v\n", task)
-		jsonDoc, err := json.Marshal(task)
-		if err != nil {
-			err = fmt.Errorf("cant marshal task due to %v", err)
-			context.Error(err)
-			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
-			return
-		}
-
-		res, err := http.NewRequest(http.MethodGet, calcServiceURL, bytes.NewReader(jsonDoc))
+		ans, err := getCalculation(calcServiceAddr, task)
 		if err != nil {
 			context.Error(err)
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
 			return
-		}
-		//res.Body
-		res = res
-		ans, err := 0, nil // core.StartCalculationForTask(task, taskName)
-		if err != nil {
-			context.Error(err)
-			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
 		}
 
 		if len(context.Errors) == 0 {
-			context.JSON(http.StatusOK, fmt.Sprintf("minimal duration for execution task %v  is %v", targetTaskName, ans))
+			context.JSON(http.StatusOK, gin.H{"Task": targetTaskName, "MinimalTime": ans})
 		}
 
 	}
+}
+
+func getCalculation(calculationServerAddress string, task core.Task) (uint32, error) {
+	calculationServerAddress = "http://" + calculationServerAddress + "/calculate"
+	jsonDoc, err := json.Marshal(task)
+	if err != nil {
+		err = fmt.Errorf("cant marshal task due to %v", err)
+		return 0, err
+	}
+
+	rep, err := http.NewRequest(http.MethodGet, calculationServerAddress, bytes.NewReader(jsonDoc))
+	if err != nil {
+		return 0, err
+	}
+	repBody, err := ioutil.ReadAll(rep.Body)
+	if err != nil {
+		return 0, err
+	}
+	var ans struct {
+		Answer uint32
+	}
+	if err = json.Unmarshal(repBody, &ans); err != nil {
+		return 0, err
+	}
+	return ans.Answer, nil
 }

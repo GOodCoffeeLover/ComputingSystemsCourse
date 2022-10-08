@@ -15,9 +15,16 @@ services:
     build: ./main
     depends_on:
       - mongoDB
+      - calculator
 #    restart: always
     ports:
       - "8080:8080"
     environment:
       MONGODB_URI : "mongodb://${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}@mongoDB:27017/"
+      CALCULATION_SERVICE_ADDRESS: "calculator:8090"
 
+  calculator:
+    image: calculator
+    build: ./calculator
+    ports:
+      - "8090:8090"
