@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"io/ioutil"
 	"log"
 	"main/internal/core"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type tasksStorage interface {
@@ -187,12 +190,24 @@ func HandleWorkDelete(tasks tasksStorage) func(c *gin.Context) {
 
 //get  /task/calculate/:task_name
 func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
-	calcServiceAddr := os.Getenv("CALCULATION_SERVICE_ADDRESS")
-	if calcServiceAddr == "" {
+
+	calculationServiceAddr := os.Getenv("CALCULATION_SERVICE_ADDRESS")
+	if calculationServiceAddr == "" {
 		log.Fatal("don't have calculation service address")
 	} else {
-		log.Printf("Calculation Address: %v", calcServiceAddr)
+		log.Printf("Calculation Service Address: %v", calculationServiceAddr)
 	}
+	redisAddres := os.Getenv("REDIS_ADDRESS")
+	if calculationServiceAddr == "" {
+		log.Fatal("don't have redis address")
+	} else {
+		log.Printf("Redis Address: %v", redisAddres)
+	}
+	clientRedis := redis.NewClient(&redis.Options{
+		Addr: redisAddres,
+		DB:   0,
+	})
+
 	return func(context *gin.Context) {
 		targetTaskName := context.Param("task_name")
 
@@ -204,17 +219,25 @@ func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
 			return
 		}
-
-		ans, err := getCalculation(calcServiceAddr, task)
+		ansStr, err := clientRedis.Get(targetTaskName).Result()
+		if err == nil {
+			ans, err := strconv.ParseUint(ansStr, 10, 32)
+			if err == nil {
+				context.JSON(http.StatusOK, gin.H{"Task": targetTaskName, "MinimalTime": ans})
+				return
+			}
+		}
+		ans, err := getCalculation(calculationServiceAddr, task)
 		if err != nil {
 			context.Error(err)
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
 			return
 		}
-
-		if len(context.Errors) == 0 {
-			context.JSON(http.StatusOK, gin.H{"Task": targetTaskName, "MinimalTime": ans})
+		err = clientRedis.Set(targetTaskName, ans, 5*time.Second).Err()
+		if err != nil {
+			log.Printf("can't cash calculation due to %v", err)
 		}
+		context.JSON(http.StatusOK, gin.H{"Task": targetTaskName, "MinimalTime": ans})
 
 	}
 }
