@@ -3,7 +3,7 @@ version: "3.8"
 services:
 
   redis:
-    image: redis
+    image: redis:7.0.5
     ports:
       - "6379:6379"
 
@@ -15,13 +15,21 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: "${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}"
       MONGO_INITDB_ROOT_PASSWORD: "${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}"
+    healthcheck:
+      # test: ["CMD", "/bin/mongostat", "--http", "mongodb://localhost:27017", "1"]
+      # test: echo 'db.runCommand("ping").ok' | mongo mongo:27017/test --quiet
+      test: echo 'db.runCommand({serverStatus:1}).ok' | mongosh admin -u $MONGO_ROOT_USERNAME -p $MONGO_ROOT_PASSWORD --quiet | grep 1
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   main:
     image: task-manager
     build: ./main
     depends_on:
-      - mongoDB
-      - calculator
+      mongoDB:
+        condition: service_healthy
 #    restart: always
     ports:
       - "8080:8080"
