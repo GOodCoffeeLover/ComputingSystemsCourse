@@ -2,32 +2,33 @@ package handlers
 
 import (
 	"calculator/internal/core"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
-func HandleTaskCalculations() func(ctx *gin.Context) {
-	return func(ctx *gin.Context) {
-		data, err := ctx.GetRawData()
-		if err != nil {
-			ctx.AbortWithError(http.StatusConflict, fmt.Errorf("can't get raw data due to %v", err))
-			return
-		}
-		task := core.Task{}
+type taskGetter interface {
+	Get(taskName string) (task core.Task, err error)
+}
 
-		if err = json.Unmarshal(data, &task); err != nil {
-			ctx.AbortWithError(http.StatusConflict, fmt.Errorf("can't unmarshal raw data due to %v", err))
+func HandleTaskCalculations(tasks taskGetter) func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
+		targetTaskName := ctx.Param("task_name")
+
+		task, err := tasks.Get(targetTaskName)
+
+		if err != nil {
+			ctx.AbortWithError(http.StatusConflict, fmt.Errorf("can't get task due to %v", err))
 			return
 		}
-		fmt.Println(task)
+		log.Println(task)
 		res, err := task.StartCalculation()
 		if err != nil {
 			ctx.AbortWithError(http.StatusInternalServerError, fmt.Errorf("can't complite calculations due to %v", err))
 			return
 		}
-		fmt.Printf("Calculation result: %v", res)
+		log.Printf("Calculation result: %v", res)
 		ctx.JSON(http.StatusOK, gin.H{"Answer": res})
 
 	}

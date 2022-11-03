@@ -41,5 +41,7 @@ services:
   calculator:
     image: calculator
     build: ./calculator
+    environment:
+      MONGODB_URI: "mongodb://${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}@mongoDB:27017/"
     ports:
       - "8090:8090"

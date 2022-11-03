@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -227,7 +226,7 @@ func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
 				return
 			}
 		}
-		ans, err := getCalculation(calculationServiceAddr, task)
+		ans, err := getCalculation(calculationServiceAddr, targetTaskName)
 		if err != nil {
 			context.Error(err)
 			context.Data(http.StatusConflict, "application/json", []byte(fmt.Sprintf("error: %v", err)))
@@ -242,23 +241,21 @@ func HandleCalculation(tasks tasksStorage) func(c *gin.Context) {
 	}
 }
 
-func getCalculation(calculationServerAddress string, task core.Task) (uint32, error) {
-	calculationServerAddress = "http://" + calculationServerAddress + "/calculate"
-	jsonDoc, err := json.Marshal(task)
+func getCalculation(calculationServerAddress string, taskName string) (uint32, error) {
+	calculationServerAddress = "http://" + calculationServerAddress + "/calculate/" + taskName
+
+	req, err := http.NewRequest(http.MethodGet, calculationServerAddress, nil)
 	if err != nil {
-		err = fmt.Errorf("cant marshal task due to %v", err)
 		return 0, err
 	}
 
-	req, err := http.NewRequest(http.MethodGet, calculationServerAddress, bytes.NewReader(jsonDoc))
-	if err != nil {
-		return 0, err
-	}
-	rep, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, nil
 	}
-	repBody, err := ioutil.ReadAll(rep.Body)
+
+	repBody, err := ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		return 0, err
 	}
