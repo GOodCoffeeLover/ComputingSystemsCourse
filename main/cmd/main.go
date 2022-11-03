@@ -22,7 +22,7 @@ func main() {
 	})
 
 	router.GET("/task/:task_name", handlers.HandleTaskAccess(tasks))
-	router.GET("/task/calculate/:task_name", handlers.HandleCalculation(tasks))
+
 	router.POST("/task", handlers.HandleTaskCreation(tasks))
 	router.POST("/task/:task_name", handlers.HandleTaskUpdate(tasks))
 	router.DELETE("/task/:task_name", handlers.HandleTaskDelete(tasks))
@@ -32,7 +32,7 @@ func main() {
 	router.POST("/work/:task_name", handlers.HandleWorkCreation(tasks))
 	router.DELETE("/work/:task_name/:work_name", handlers.HandleWorkDelete(tasks))
 
-	err = router.Run(":8080")
+	err = router.Run(":8085")
 	if err != nil {
 		log.Fatalln(err)
 	}

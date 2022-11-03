@@ -127,7 +127,7 @@ curl http://localhost:8080/task/task0\
     -w '\n' \
     --request "GET"
 
-curl http://localhost:8080/task/calculate/task0\
+curl http://localhost:8080/calculate/task0\
     -w '\n' \
     --request "GET"
 

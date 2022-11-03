@@ -2,10 +2,7 @@ FROM golang:1.18
 
 WORKDIR main
 
-EXPOSE 8080:8080
-
-# COPY ./wait-for-it.sh .
-# RUN ["chmod", "+x", "./wait-for-it.sh"]
+EXPOSE 8085:8085
 
 COPY go.mod go.sum ./
 
