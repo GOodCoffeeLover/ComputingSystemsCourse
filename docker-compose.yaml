@@ -21,18 +21,35 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+  log-consumer:
+    image: consumer
+    build: ./log-consumer
+    depends_on:
+      - proxy
+    environment:
+      KAFKA_BROKERS: "${KAFKA_BROKERS:?EMPTY KAFKA_BROKERS}"
+      KAFKA_TOPIC: "${KAFKA_TOPIC:?EMPTY KAFKA_TOPIC}"
   proxy:
     image: proxy
     build: ./frontProxy
     depends_on:
-      - main
-      - calculator
+      main:
+        condition: service_started
+      calculator:
+        condition: service_started
+      kafka0:
+        condition: service_healthy
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
       MAIN_SERVICE_ADDRESS: "main:8085"
       CALCULATOR_SERVICE_ADDRESS: "calculator:8090"
       KAFKA_BROKERS: "${KAFKA_BROKERS:?EMPTY KAFKA_BROKERS}"
+      KAFKA_TOPIC: "${KAFKA_TOPIC:?EMPTY KAFKA_TOPIC}"
 
   main:
     image: task-manager
@@ -40,7 +57,6 @@ services:
     depends_on:
       mongoDB:
         condition: service_healthy
-#    restart: always
     ports:
       - "8085:8085"
     environment:
@@ -58,6 +74,7 @@ services:
       REDIS_ADDRESS: "redis:6379"
     ports:
       - "8090:8090"
+
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

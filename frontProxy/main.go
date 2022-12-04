@@ -20,11 +20,12 @@ func main() {
 		"MAIN_SERVICE_ADDRESS",
 		"CALCULATOR_SERVICE_ADDRESS",
 		"KAFKA_BROKERS",
+		"KAFKA_TOPIC",
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	kafkaWriter, err := setupKafka("logs", strings.Split(envs["KAFKA_BROKERS"], ","))
+	kafkaWriter, err := setupKafka(envs["KAFKA_TOPIC"], strings.Split(envs["KAFKA_BROKERS"], ","))
 
 	router.GET("/task/:task_name", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
 	router.POST("/task", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
@@ -104,17 +105,20 @@ func Proxy(target string, w *kafka.Writer) gin.HandlerFunc {
 	i := 0
 	return func(c *gin.Context) {
 		director := func(req *http.Request) {
+			go func() {
+				err := w.WriteMessages(context.Background(), kafka.Message{
+					Value:     []byte(req.URL.Path),
+					Partition: i % 2,
+				})
+				i += 1
+				if err != nil {
+					log.Printf("can't send message(%v) to kafka due to:%v", req.URL.Path, err)
+				}
+				log.Println("Send message to kafka broker")
+			}()
 			req.URL.Scheme = "http"
 			req.URL.Host = target
 			req.Host = target
-			err := w.WriteMessages(context.Background(), kafka.Message{
-				Value:     []byte(req.URL.Path),
-				Partition: i % 2,
-			})
-			i += 1
-			if err != nil {
-				log.Printf("can't send message(%v) to kafka due to:%v", req.URL.Path, err)
-			}
 		}
 
 		proxy := &httputil.ReverseProxy{Director: director}
