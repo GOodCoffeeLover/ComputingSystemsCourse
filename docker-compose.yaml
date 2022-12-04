@@ -32,6 +32,7 @@ services:
     environment:
       MAIN_SERVICE_ADDRESS: "main:8085"
       CALCULATOR_SERVICE_ADDRESS: "calculator:8090"
+      KAFKA_BROKERS: "${KAFKA_BROKERS:?EMPTY KAFKA_BROKERS}"
 
   main:
     image: task-manager
@@ -57,3 +58,56 @@ services:
       REDIS_ADDRESS: "redis:6379"
     ports:
       - "8090:8090"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  kafka0:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka0:9092,PLAINTEXT_HOST1://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST1:PLAINTEXT
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  kafka1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9093,PLAINTEXT_HOST1://kafka:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST1:PLAINTEXT
+    healthcheck:
+      test: nc -z localhost 9093 || exit -1
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9094,PLAINTEXT_HOST1://kafka:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST1:PLAINTEXT
+    healthcheck:
+      test: nc -z localhost 9094 || exit -1
+      interval: 15s
+      timeout: 10s
+      retries: 5
