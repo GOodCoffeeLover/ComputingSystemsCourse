@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/kafka-go"
+	rpc "github.com/student31415/ComputerSystemsCource/calculator/pkg/calculator_pb"
 	"log"
 	"net"
 	"net/http"
@@ -37,7 +38,9 @@ func main() {
 	router.POST("/work/:task_name", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
 	router.DELETE("/work/:task_name/:work_name", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
 
-	router.GET("/calculate/:task_name", Proxy(envs["CALCULATOR_SERVICE_ADDRESS"], kafkaWriter))
+	router.GET("/calculate/:task_name", func(ctx *gin.Context) {
+		rpc.
+	})
 
 	err = router.Run(":8080")
 	if err != nil {
