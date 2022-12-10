@@ -114,7 +114,7 @@ func (task *Task) calculateMinimalTime() uint {
 
 }
 
-func (task *Task) StartCalculation() (ans uint, err error) {
+func (task *Task) StartCalculation() (ans uint64, err error) {
 	maxGorutines := 10
 
 	gather := make(chan uint, maxGorutines)
@@ -143,5 +143,5 @@ func (task *Task) StartCalculation() (ans uint, err error) {
 		}()
 	}
 
-	return uint(<-result), nil
+	return uint64(<-result), nil
 }

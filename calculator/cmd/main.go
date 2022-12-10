@@ -1,39 +1,42 @@
 package main
 
 import (
-	"calculator/internal/handlers"
+	"calculator/internal/service"
 	"calculator/internal/storage"
-	"github.com/gin-gonic/gin"
-	pb "github.com/student31415/ComputingSystemsCourse/calculator"
+	pb "calculator/pkg/calculator_pb"
+	"github.com/go-redis/redis"
+	"google.golang.org/grpc"
 	"log"
-	"net/http"
+	"net"
+	"os"
 )
 
-type server struct {
-	pb.UnimplementedCalculatorServer
-}
-
-// SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	log.Printf("Received: %v", in.GetName())
-	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
-}
-
 func main() {
-	router := gin.Default()
-	tasksDB, err := storage.NewTasksMongoStorage()
+	lis, err := net.Listen("tcp", ":8090")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("failed to listen: %v", err)
 	}
 
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "it's okay"})
+	redisAddres := os.Getenv("REDIS_ADDRESS")
+	if redisAddres == "" {
+		log.Fatalln("don't have redis address")
+	}
+	clientRedis := redis.NewClient(&redis.Options{
+		Addr: redisAddres,
+		DB:   0,
 	})
 
-	router.GET("/calculate/:task_name", handlers.HandleTaskCalculations(tasksDB))
-	err = router.Run(":8090")
+	tasks, err := storage.NewTasksMongoStorage()
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer tasks.Disconnect()
+	s := grpc.NewServer()
+	service, err := service.NewService(tasks, clientRedis)
 
+	pb.RegisterCalculatorServer(s, service)
+	log.Printf("server listening at %v", lis.Addr())
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

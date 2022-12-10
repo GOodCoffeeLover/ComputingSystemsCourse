@@ -4,7 +4,7 @@
 // - protoc             v3.17.3
 // source: calculator.proto
 
-package ComputingSystemsCourse
+package calculator
 
 import (
 	context "context"

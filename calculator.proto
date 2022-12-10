@@ -8,7 +8,7 @@ message CalculateRequest {
 }
 
 message CalculateResponse {
-  uint32 time  = 1;
+  uint64 time  = 1;
 }
 
 service Calculator {
