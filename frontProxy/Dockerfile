@@ -6,9 +6,11 @@ COPY go.mod go.sum ./
 
 RUN ["go", "mod", "download"]
 
-COPY ./pkg/ main.go ./
+COPY ./cmd ./cmd
+COPY ./pkg ./pkg
 
-RUN ["go", "build", "-o", "/proxy", "main.go"]
+
+RUN ["go", "build", "-o", "/proxy", "cmd/main.go"]
 
 FROM golang:1.18
 

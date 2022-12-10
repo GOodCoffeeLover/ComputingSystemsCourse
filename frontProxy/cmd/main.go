@@ -3,19 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	pb "frontProxy/pkg/calculator_pb"
 	"github.com/gin-gonic/gin"
-	"github.com/segmentio/kafka-go"
+	kafka "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
-	pb "main/pkg/calculator_pb"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func main() {
@@ -40,7 +39,7 @@ func main() {
 	router.POST("/work/:task_name/:work_name", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
 	router.POST("/work/:task_name", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
 	router.DELETE("/work/:task_name/:work_name", Proxy(envs["MAIN_SERVICE_ADDRESS"], kafkaWriter))
-	conn, err := grpc.Dial(envs["CALCULATOR_SERVICE_ADDRESS"]+"8090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(envs["CALCULATOR_SERVICE_ADDRESS"], grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -51,11 +50,9 @@ func main() {
 
 	router.GET("/calculate/:task_name", func(ctx *gin.Context) {
 		task := ctx.Param("task_name")
-		ctx_rpc, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		r, err := calc.Calculate(ctx_rpc, &pb.CalculateRequest{Task: task})
+		r, err := calc.Calculate(ctx, &pb.CalculateRequest{Task: task})
 		if err != nil {
-			ctx.AbortWithError(http.StatusInternalServerError, fmt.Errorf("could not greet: %v", err))
+			ctx.AbortWithError(http.StatusInternalServerError, fmt.Errorf("could not calculate: %v", err))
 		}
 		ctx.JSON(http.StatusOK, gin.H{"task": task, "MinimalTime": r.GetTime()})
 

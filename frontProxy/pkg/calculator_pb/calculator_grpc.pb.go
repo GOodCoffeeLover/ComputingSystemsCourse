@@ -4,7 +4,7 @@
 // - protoc             v3.17.3
 // source: calculator.proto
 
-package calculator
+package calculator_pb
 
 import (
 	context "context"
@@ -35,7 +35,7 @@ func NewCalculatorClient(cc grpc.ClientConnInterface) CalculatorClient {
 
 func (c *calculatorClient) Calculate(ctx context.Context, in *CalculateRequest, opts ...grpc.CallOption) (*CalculateResponse, error) {
 	out := new(CalculateResponse)
-	err := c.cc.Invoke(ctx, "/calculator.Calculator/Calculate", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/calculator_pb.Calculator/Calculate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func _Calculator_Calculate_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/calculator.Calculator/Calculate",
+		FullMethod: "/calculator_pb.Calculator/Calculate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CalculatorServer).Calculate(ctx, req.(*CalculateRequest))
@@ -92,7 +92,7 @@ func _Calculator_Calculate_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Calculator_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "calculator.Calculator",
+	ServiceName: "calculator_pb.Calculator",
 	HandlerType: (*CalculatorServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

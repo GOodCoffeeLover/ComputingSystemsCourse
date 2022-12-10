@@ -61,7 +61,7 @@ services:
       - "8085:8085"
     environment:
       MONGODB_URI : "mongodb://${MONGO_ROOT_USERNAME:?EMPTY MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD:?EMPTY MONGO_ROOT_PASSWORD}@mongoDB:27017/"
-      CALCULATION_SERVICE_ADDRESS: "calculator:8090"
+
 
   calculator:
     image: calculator
