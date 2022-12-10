@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package calculator;
+option go_package = "github.com/student31415/ComputingSystemsCourse/protos/calculator";
+
+message CalculateRequest {
+  string task = 1;
+}
+
+message CalculateResponse {
+  uint32 time  = 1;
+}
+
+service Calculator {
+  rpc Calculate (CalculateRequest) returns (CalculateResponse) {}
+}
