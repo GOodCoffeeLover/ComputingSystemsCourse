@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 
 RUN ["go", "mod", "download"]
 
-COPY main.go .
+COPY ./pkg/ main.go ./
 
 RUN ["go", "build", "-o", "/proxy", "main.go"]
 
